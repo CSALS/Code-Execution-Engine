@@ -52,13 +52,4 @@ module.exports = class DockerContainer {
         const data = await this.container.inspect();
         return data;
     }
-
-    async stop() {
-        return await this.container.kill();
-    }
-
-
-    removeContainer() {
-        return this.container.remove({ force: true });
-    }
 };

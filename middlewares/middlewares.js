@@ -7,6 +7,9 @@ const util = require("util");
 const { extensions, noCompilation, getCompileCommand, getExecuteCommand } = require("../languages");
 
 
+/**
+ * @description Creates a file to store source code and input in our local machine
+ */
 const createProgramFile = async (req, res, next) => {
     req.sourceFile = uuid.new() + `.${extensions[req.body.language]}`;
     req.inputFile = uuid.new() + `.in`;
@@ -23,6 +26,11 @@ const createProgramFile = async (req, res, next) => {
     });
 }
 
+
+/**
+ * @description Spins up a new docker container and copies the source code and input file to that container.
+ *              Then depending on the language the it is either directly executed or first compiled and then executed.
+ */
 const executeProgram = async (req, res, next) => {
     try {
         const docker = new DockerContainer();
@@ -72,6 +80,9 @@ const executeProgram = async (req, res, next) => {
     }
 }
 
+/**
+ * @description This middleware function is called after executeCommand(). We delete the container and source code and input
+ */
 const deleteFilesAndContainer = async (req, res, next) => {
     //Delete the container
     shell.exec(`docker rm ${req.containerName} --force`);
