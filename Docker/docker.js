@@ -3,8 +3,9 @@ const short = require("short-uuid");
 const uuid = short();
 
 module.exports = class DockerContainer {
-    constructor() {
+    constructor(language) {
         this.docker = new Docker();
+        this.imageName = language + "/sandbox";
     }
 
     /**
@@ -22,7 +23,7 @@ module.exports = class DockerContainer {
     async createContainer() {
         this.containerName = this.getContainerName();
         this.container = await this.docker.createContainer({
-            Image: "csals/sandbox",
+            Image: this.imageName,
             name: this.containerName,
             Tty: true,
             OpenStdin: false,
@@ -51,5 +52,11 @@ module.exports = class DockerContainer {
     async inspect() {
         const data = await this.container.inspect();
         return data;
+    }
+    removeContainer() {
+        return this.container.remove({ force: true });
+    }
+    async stop() {
+        return await this.container.kill();
     }
 };

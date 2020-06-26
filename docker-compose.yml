@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  c:
+    # will build ./docker/c/Dockerfile
+    build: ./docker/c
+    image: c/sandbox
+
+  cpp:
+    build: ./docker/cpp    
+    image: cpp/sandbox
+
+  python2:
+    build: ./docker/python2
+    image: python2/sandbox
+
+  python3:
+    build: ./docker/python3
+    image: python3/sandbox

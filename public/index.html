@@ -6,18 +6,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Execution Engine</title>
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.6/ace.js"></script>
+    <script src="js/script.js"></script>
 </head>
 
-<body>
-    <textarea id="code" name="code" rows="4" cols="50">
-    </textarea>
-
-    <textarea id="input" name="input" rows="4" cols="50">
-    </textarea>
+<body onload='ready()'>
+    <div id="inputArea">
+        <br><br>
+        <textarea id="code" name="code" rows="10" cols="50">
+        </textarea>
+        <br><br><br><br><br><br>
+        <textarea id="input" name="input" rows="4" cols="10">
+        </textarea>
+        <br><br><br><br>
+        <textarea id="language" name="language" rows="1" cols="5">
+        </textarea>
+        <br><br><br><br>
+    </div>
 
     <button type="button" id="submit" onClick="submit()">SUBMIT CODE</button>
-</body>
 
-<script src="js/script.js"></script>
+    <div id="output">OUTPUT</div>
+</body>
 
 </html>

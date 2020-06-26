@@ -13,9 +13,10 @@ app.listen(port, () => { console.log(`Listening on port ${port}`) })
 
 
 app.post("/execute", [createProgramFile, executeProgram, deleteFilesAndContainer], async (req, res) => {
-    console.log(req);
     res.status(200).json({
         output: req.output,
-        error: req.error
+        error: req.error,
+        stderr: req.stderr,
+        runtime: req.runtime,
     });
 });

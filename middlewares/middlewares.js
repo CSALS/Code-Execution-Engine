@@ -1,11 +1,14 @@
-const DockerContainer = require("../Docker/docker");
+const DockerContainer = require("../docker/docker");
 const short = require("short-uuid");
 const uuid = short();
 const fs = require("fs");
 const shell = require("shelljs");
 const util = require("util");
 const { extensions, noCompilation, getCompileCommand, getExecuteCommand } = require("../languages");
-
+const {
+  performance,
+  PerformanceObserver
+} = require('perf_hooks');
 
 /**
  * @description Creates a file to store source code and input in our local machine
@@ -33,7 +36,8 @@ const createProgramFile = async (req, res, next) => {
  */
 const executeProgram = async (req, res, next) => {
     try {
-        const docker = new DockerContainer();
+        const language = req.body.language;
+        const docker = new DockerContainer(language);
         const containerName = await docker.createContainer();
         console.log("Container name = ", containerName);
 
@@ -42,33 +46,66 @@ const executeProgram = async (req, res, next) => {
         //Copy input from local to container
         shell.exec(`docker cp code/${req.inputFile} ${containerName}:/${req.inputFile}`);
 
-        const language = req.body.language;
 
         if (noCompilation[language] === 1) {
             //Interpreted languages. Directly execute them
+            const startTime = performance.now();
             const executeResponse = await docker.execute(getExecuteCommand(language, req.sourceFile, req.inputFile));
+            const endTime = performance.now();
             req.output = executeResponse.output;
-            req.error = executeResponse.error;
+            if (executeResponse.error === null || executeResponse.error === undefined || executeResponse.error === "")
+                req.error = "";
+            else
+                req.error = "Exeuction Error";
+            req.stderr = executeResponse.error;
+            req.runtime = (endTime - startTime) + "ms"
         } else {
             //Compiled languages. Compile them first and then execute
             const compileCommand = getCompileCommand(language, req.sourceFile);
-            console.log(compileCommand);
+            console.log("Compile Command: ", compileCommand);
             const compileResponse = await docker.execute(compileCommand);
-
-            if (compileResponse.err === null || compileResponse.err === undefined || compileResponse.err === "") {
+            console.log("Compile Response: ", compileResponse);
+            if (compileResponse.error === null || compileResponse.error === undefined || compileResponse.error === "") {
                 console.log("Compile Success");
                 //TODO: while executing we need to setup a timer so that we can throw TLE
                 const executeCommand = getExecuteCommand(language, req.sourceFile, req.inputFile);
-                console.log(executeCommand);
+                console.log("Execute Command: ", executeCommand);
 
+                const timer = setTimeout(async () => {
+                    try {
+                        console.log("Process timed Out! Check for infinite loops!");
+                        const inspectData = await docker.inspect();
+                        if (inspectData.State.Running) {
+                            docker.removeContainer();
+                            console.log(
+                                "Detected infinite loop! Killing right away...."
+                            );
+                            req.output = "";
+                            req.error = "TLE";
+                            req.stderr = "Time Limit Exceeded";
+                            next();
+                        }
+                    } catch (err) {
+                        throw err;
+                    }
+                }, 15000);
+                const startTime = performance.now();
                 const executeResponse = await docker.execute(executeCommand);
-                console.log(executeResponse);
-
+                const endTime = performance.now();
+                clearTimeout(timer);
+                console.log("Execute Response: ", executeResponse);
                 req.output = executeResponse.output;
-                req.error = executeResponse.error;
+                if (executeResponse.error === null || executeResponse.error === undefined || executeResponse.error === "")
+                    req.error = "";
+                else
+                    req.error = "Exeuction Error";
+                req.stderr = executeResponse.error;
+                req.runtime = (endTime - startTime) + "ms"
             } else {
                 req.output = "";
                 req.error = "Compilation Error";
+                req.stderr = compileResponse.error;
+                console.log(req.stderr);
             }
         }
         req.containerName = containerName;
@@ -88,11 +125,11 @@ const deleteFilesAndContainer = async (req, res, next) => {
     shell.exec(`docker rm ${req.containerName} --force`);
 
     //Remove the sourceFile
-    fs.access(util.format("/code/%s", req.sourceFile), fs.F_OK, err => {
+    fs.access(util.format("./code/%s", req.sourceFile), fs.F_OK, err => {
         if (err) {
             return;
         }
-        fs.unlink(util.format("/code/%s", req.sourceFile), err => {
+        fs.unlink(util.format("./code/%s", req.sourceFile), err => {
             if (err) {
                 console.log(err);
             }
@@ -100,11 +137,11 @@ const deleteFilesAndContainer = async (req, res, next) => {
     });
 
     //Remove the inputFile
-    fs.access(util.format("/code/%s", req.inputFile), fs.F_OK, err => {
+    fs.access(util.format("./code/%s", req.inputFile), fs.F_OK, err => {
         if (err) {
             return;
         }
-        fs.unlink(util.format("/code/%s", req.inputFile), err => {
+        fs.unlink(util.format("./code/%s", req.inputFile), err => {
             if (err) {
                 console.log(err);
             }

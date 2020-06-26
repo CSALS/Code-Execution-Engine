@@ -15,12 +15,14 @@
 We need to build an ubuntu based image for executing user code.
 
 
+## FEATURES
+- download the code file & upload a code file (frontend tasks)
+- save the user code in browser local store
+- generate url for the code (need to use DB for this.)
 
 ## TODO
-- add timelimit for executing and if instance is still running return TLE
 - code files are not getting deleted
-
-
 
 ## optimizations
 - is base image good? Shifted to alpine. Very light-weight. very less size than ubuntu (<50MB , 150+MB)
+- is it better to install all compilers in just one image? maybe try different images for each langugae (DONE)
